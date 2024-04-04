@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: submission.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\submission.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
