@@ -2,3 +2,6 @@ numpy
 pandas
 matplotlib
 bettermdptools
+gymnasium
+seaborn
+itertools
