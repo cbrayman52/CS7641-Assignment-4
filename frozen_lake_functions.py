@@ -1,18 +1,15 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from matplotlib.colors import ListedColormap
 import seaborn as sns
 import itertools
 
 import gymnasium as gym
+from bettermdptools.algorithms.rl import RL
 from bettermdptools.algorithms.planner import Planner
-from bettermdptools.utils.test_env import TestEnv
+# from bettermdptools.utils.test_env import TestEnv
 from bettermdptools.utils.plots import Plots
-from bettermdptools.utils.grid_search import GridSearch
-
-from rl import RL
+from test_env import TestEnv
 
 def perform_hyperparameter_tuning(env, params, alg):
 
@@ -26,10 +23,13 @@ def perform_hyperparameter_tuning(env, params, alg):
 
         if 'VI' in alg:
             _, _, pi = Planner(env.P).value_iteration(gamma=param_dict['Gamma'], n_iters=param_dict['N-Iters'], theta=param_dict['Theta'])
+            title = 'Value Iteration Score '
         elif 'PI' in alg:
             _, _, pi = Planner(env.P).policy_iteration(gamma=param_dict['Gamma'], n_iters=param_dict['N-Iters'], theta=param_dict['Theta'])
+            title = 'Policy Iteration Score '
         else:
-            _, _, pi, _, _, _= RL(env).q_learning(gamma=param_dict['Gamma'], epsilon_decay_ratio=param_dict['Epsilon Decay'], n_episodes=param_dict['N-Episodes'])
+            _, _, pi, _, _= RL(env).q_learning(gamma=param_dict['Gamma'], epsilon_decay_ratio=param_dict['Epsilon Decay'], n_episodes=param_dict['N-Episodes'])
+            title = 'Q-Learning Score '
 
         test_scores = np.mean(TestEnv.test_env(env=env, n_iters=10, pi=pi))
         hyperparameters.append({**param_dict, 'Score':test_scores})
@@ -43,9 +43,10 @@ def perform_hyperparameter_tuning(env, params, alg):
     # Iterate through parameter keys and plot corresponding data
     for i, param_key in enumerate(param_keys):
         sns.barplot(data=grid_search_results[[param_key, 'Score']], x=param_key, y='Score', ax=axs[i], palette=sns.color_palette("tab10"))
-        axs[i].set_title('Value Iteration Score vs ' + param_key)
+        axs[i].set_title(title + param_key)
         axs[i].set_xlabel(param_key)
-        axs[i].grid(True, zorder=1)
+        axs[i].set_ylabel('')
+        axs[i].grid(False)
 
         # Set x-tick labels for 'Theta' parameter
         if param_key == 'Theta':
@@ -53,7 +54,7 @@ def perform_hyperparameter_tuning(env, params, alg):
             theta_labels = [str(theta) for theta in theta_values]
             axs[i].set_xticklabels(theta_labels)
 
-    axs[0].set_ylabel('Value Iteration Score')
+    axs[0].set_ylabel(title)
 
     # Adjust layout and save the plot
     plt.tight_layout()
@@ -75,6 +76,7 @@ def values_heat_map(data, title, size, alg):
     # Create a mask where cells with value 0 are marked as True
     mask = data == 0.
     mask[-1][-1] = False
+    mask[19][9] = False
     cmap = sns.color_palette('Blues', as_cmap=True)
     cmap.set_bad("grey") 
     
@@ -90,7 +92,7 @@ def values_heat_map(data, title, size, alg):
         mask=mask,
         annot_kws={'fontsize': 'large'},
         )
-    plt.title(title, fontsize=20)
+    plt.title(title, fontsize=40)
     plt.savefig(f'Images/Frozen Lake/{alg}/Value Heat Map.png')
     plt.close()
     return

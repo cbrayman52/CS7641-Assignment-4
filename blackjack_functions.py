@@ -24,12 +24,15 @@ def perform_hyperparameter_tuning(env, params, alg):
 
         if 'VI' in alg:
             _, _, pi = Planner(env.P).value_iteration(gamma=param_dict['Gamma'], n_iters=param_dict['N-Iters'], theta=param_dict['Theta'])
+            title = 'Value Iteration Score '
         elif 'PI' in alg:
             _, _, pi = Planner(env.P).policy_iteration(gamma=param_dict['Gamma'], n_iters=param_dict['N-Iters'], theta=param_dict['Theta'])
+            title = 'Policy Iteration Score '
         else:
             _, _, pi, _, _ = RL(env).q_learning(gamma=param_dict['Gamma'], epsilon_decay_ratio=param_dict['Epsilon Decay'], n_episodes=param_dict['N-Episodes'])
+            title = 'Q-Learning Score '
 
-        test_scores = np.mean(TestEnv.test_env(env=env, n_iters=10, pi=pi))
+        test_scores = np.mean(TestEnv.test_env(env=env, n_iters=1000, pi=pi))
         hyperparameters.append({**param_dict, 'Score':test_scores})
 
     # Create DataFrame
@@ -40,18 +43,19 @@ def perform_hyperparameter_tuning(env, params, alg):
 
     # Iterate through parameter keys and plot corresponding data
     for i, param_key in enumerate(param_keys):
-        data = grid_search_results[param_key]
-        sns.barplot(data=grid_search_results[[param_key, 'Score']], x=param_key, y='Score', ax=axs[i])
-        axs[i].set_title('Value Iteration Score vs ' + param_key)
+        sns.barplot(data=grid_search_results[[param_key, 'Score']], x=param_key, y='Score', ax=axs[i], palette=sns.color_palette("tab10"))
+        axs[i].set_title(title + param_key)
         axs[i].set_xlabel(param_key)
-        axs[0].set_ylabel('Value Iteration Score')
-        axs[i].grid(True)
+        axs[i].set_ylabel('')
+        axs[i].grid(False)
 
         # Set x-tick labels for 'Theta' parameter
         if param_key == 'Theta':
             theta_values = ['{:.0e}'.format(theta) for theta in params['Theta']]
             theta_labels = [str(theta) for theta in theta_values]
             axs[i].set_xticklabels(theta_labels)
+
+    axs[0].set_ylabel(title)
 
     # Adjust layout and save the plot
     plt.tight_layout()
@@ -68,6 +72,7 @@ def perform_hyperparameter_tuning(env, params, alg):
 def values_heat_map(data, title, size, alg):
     data = np.around(np.array(data).reshape(size), 2)
     df = pd.DataFrame(data=data)
+
     plt.figure(figsize=(10,10))
     sns.heatmap(df, 
                 annot=True,
@@ -78,7 +83,7 @@ def values_heat_map(data, title, size, alg):
                 yticklabels=['H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12', 'H13', 'H14', 'H15', 'H16', 'H17', 'H18', 'H19', 'H20', 'H21',
                              'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'BJ'],
                 xticklabels=['2', '3', '4', '5', '6', '7', '8', '9', '10', 'A'],)
-    plt.title(title)
+    plt.title(title, fontsize=20)
     plt.savefig(f'Images/Blackjack/{alg}/Value Heat Map.png')
     plt.close()
     return
@@ -100,6 +105,25 @@ def values_per_iteration(data, title, alg):
     plt.close()
     return
 
+def reward_per_iteration(env, pi_track, alg):
+    mean_test_scores_list = []
+    episodes_list = []
+
+    for episode, pi in enumerate(pi_track):
+        test_scores = TestEnv.test_env(env=env, n_iters=1000, pi=pi)
+        mean_test_scores = np.mean(test_scores)
+        mean_test_scores_list.append(mean_test_scores)
+        episodes_list.append(episode)
+        
+    plt.plot(episodes_list, mean_test_scores_list)
+    plt.title('Reward vs Iteration')
+    plt.xlabel('Episodes')
+    plt.ylabel('Mean Test Scores')
+    plt.grid(True)
+    plt.savefig(f'Images/Blackjack/{alg}/Reward vs Iteration.png')
+    plt.close()
+    return
+
 def plot_policy(val_max, actions, title, alg):
     plt.figure(figsize=(10,10))
     sns.heatmap(
@@ -112,7 +136,8 @@ def plot_policy(val_max, actions, title, alg):
         yticklabels=['H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12', 'H13', 'H14', 'H15', 'H16', 'H17', 'H18', 'H19', 'H20', 'H21',
                      'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'BJ'],
         xticklabels=['2', '3', '4', '5', '6', '7', '8', '9', '10', 'A'],
-    ).set(title=title)
+    )
+    plt.title(title, fontsize=20)
     plt.savefig(f'Images/Blackjack/{alg}/Policy Map.png')
     plt.close()
     return

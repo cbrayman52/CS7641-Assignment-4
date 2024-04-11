@@ -2,9 +2,10 @@ import numpy as np
 from tqdm import tqdm
 from bettermdptools.utils.callbacks import MyCallbacks
 from bettermdptools.utils.decorators import print_runtime
-from bettermdptools.utils.test_env import TestEnv
+# from bettermdptools.utils.test_env import TestEnv
 import matplotlib.pyplot as plt
 import warnings
+from test_env import TestEnv
 
 
 class RL:
@@ -52,13 +53,13 @@ class RL:
         values = np.pad(values, (0, rem_steps), 'edge')
         return values
 
-    # @print_runtime
+    @print_runtime
     def q_learning(self,
                    nS=None,
                    nA=None,
                    convert_state_obs=lambda state: state,
                    gamma=.99,
-                   init_alpha=0.5,
+                   init_alpha=1.0,
                    min_alpha=0.01,
                    alpha_decay_ratio=0.5,
                    init_epsilon=1.0,
@@ -127,7 +128,7 @@ class RL:
         pi_track = []
         Q = np.zeros((nS, nA), dtype=np.float64)
         Q_track = np.zeros((n_episodes, nS, nA), dtype=np.float64)
-        min_track = {'Alpha': 0, 'Epsilon': 0}
+        # min_track = {'Alpha': 0, 'Epsilon': 0}
         # Explanation of lambda:
         # def select_action(state, Q, epsilon):
         #   if np.random.random() > epsilon:
@@ -145,12 +146,11 @@ class RL:
                                   min_epsilon,
                                   epsilon_decay_ratio,
                                   n_episodes)
-        min_track['Alpha'] = np.where(alphas == min_alpha)[0][0]
-        min_track['Epsilon'] = np.where(epsilons == min_epsilon)[0][0]
-        mean_test_scores_list = []
-        episodes_list = []
-        cum_sum_rewards = []
-        cum_sum_reward = 0
+        # min_track['Alpha'] = np.where(alphas == min_alpha)[0][0]
+        # min_track['Epsilon'] = np.where(epsilons == min_epsilon)[0][0]
+        # episodes_list = []
+        # cum_sum_rewards = []
+        # cum_sum_reward = 0
 
         for e in tqdm(range(n_episodes), leave=False):
             self.callbacks.on_episode_begin(self)
@@ -177,40 +177,45 @@ class RL:
             self.render = False
             self.callbacks.on_episode_end(self)
 
-            test_scores = TestEnv.test_env(env=self.env, n_iters=10, pi=np.argmax(Q, axis=1))
-            mean_test_scores = np.mean(test_scores)
-            mean_test_scores_list.append(mean_test_scores)
-            episodes_list.append(e)
-            
-            cum_sum_reward += mean_test_scores
-            
-            if (e + 1) % 100 == 0:
-                cum_sum_rewards.append(cum_sum_reward)
-                cum_sum_reward = 0
+            # test_scores = TestEnv.test_env(env=self.env, n_iters=10, pi=np.argmax(Q, axis=1))
+            # mean_test_scores = np.mean(test_scores)
+            # episodes_list.append(e)
+            # 
+            # cum_sum_reward += mean_test_scores
+            # 
+            # if (e + 1) % 100 == 0:
+            #     cum_sum_rewards.append(cum_sum_reward)
+            #     cum_sum_reward = 0
 
         V = np.max(Q, axis=1)
 
         pi = {s: a for s, a in enumerate(np.argmax(Q, axis=1))}
 
-        plt.plot(range(0, len(cum_sum_rewards) * 100, 100), cum_sum_rewards)
-        plt.title('Cumulative Reward vs Episode')
-        plt.xlabel('Episodes')
-        plt.ylabel('Cumulative Reward')
-        plt.grid(True)
+        # plt.plot(range(0, len(cum_sum_rewards) * 100, 100), cum_sum_rewards)
+        # plt.title('Cumulative Reward vs Episode')
+        # plt.xlabel('Episodes')
+        # plt.ylabel('Cumulative Reward')
+        # plt.grid(True)
+ 
+        # ymin, ymax = plt.ylim()  # Get the y-axis limits
+        # 
+        # # Adding vertical dashed lines at specific x-labels
+        # plt.axvline(x=min_track['Alpha'], color='r', linestyle='--', label='_nolegend_')
+        # plt.text(min_track['Alpha'], ymin + 0.05 * (ymax - ymin), 'Alpha', ha='right', va='top')
+        # 
+        # if min_track['Epsilon'] != min_track['Alpha']:
+        #     plt.axvline(x=min_track['Epsilon'], color='r', linestyle='--', label='_nolegend_')
+        #     plt.text(min_track['Epsilon'], ymin + 0.05 * (ymax - ymin), 'Epsilon', ha='right', va='top')
+        # else:
+        #     plt.axvline(x=min_track['Epsilon'], color='r', linestyle='--', label='_nolegend_')
+        #     plt.text(min_track['Epsilon'], ymin + 0.1 * (ymax - ymin), 'Epsilon', ha='right', va='top')
+ 
+        # if self.env.spec.name == 'FrozenLake8x8':
+        #     plt.savefig(f'Images/Frozen Lake/Small/Q-Learning/Cumulative Reward vs Episode.png')
+        # elif self.env.spec.name == 'CustomFrozenLakeEnv':
+        #     plt.savefig(f'Images/Frozen Lake/Large/Q-Learning/Cumulative Reward vs Episode.png')
+        # else:
+        #     plt.savefig(f'Images/Blackjack/Q-Learning/Cumulative Reward vs Episode.png')
+        # plt.close()
 
-        ymin, ymax = plt.ylim()  # Get the y-axis limits
-        
-        # Adding vertical dashed lines at specific x-labels
-        for label, x_label in min_track.items():
-            plt.axvline(x=x_label, color='r', linestyle='--', label='_nolegend_')
-            plt.text(x_label, ymin - 0.01 * (ymax - ymin), label, ha='center', va='top')
-
-        if self.env.spec.name == 'FrozenLake8x8':
-            plt.savefig(f'Images/Frozen Lake/Small/Q-Learning/Cumulative Reward vs Episode.png')
-        elif self.env.spec.name == 'FrozenLake':
-            plt.savefig(f'Images/Frozen Lake/Large/Q-Learning/Cumulative Reward vs Episode.png')
-        else:
-            plt.savefig(f'Images/Blackjack/Q-Learning/Cumulative Reward vs Episode.png')
-        plt.close()
-
-        return Q, V, pi, Q_track, pi_track, min_track
+        return Q, V, pi, Q_track, pi_track

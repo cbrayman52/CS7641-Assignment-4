@@ -7,7 +7,7 @@ class Planner:
     def __init__(self, P):
         self.P = P
 
-    # @print_runtime
+    @print_runtime
     def value_iteration(self, gamma=1.0, n_iters=1000, theta=1e-10):
         """
         PARAMETERS:
@@ -47,7 +47,7 @@ class Planner:
                 for a in range(len(self.P[s])):
                     for prob, next_state, reward, done in self.P[s][a]:
                         Q[s][a] += prob * (reward + gamma * V[next_state] * (not done))
-            if np.sum(np.abs(V - np.max(Q, axis=1))) < theta:
+            if np.max(np.abs(V - np.max(Q, axis=1))) < theta:
                 converged = True
                 print(i)
             V = np.max(Q, axis=1)
@@ -59,7 +59,7 @@ class Planner:
         pi = {s:a for s, a in enumerate(np.argmax(Q, axis=1))}
         return V, V_track, pi, pi_track
 
-    # @print_runtime
+    @print_runtime
     def policy_iteration(self, gamma=1.0, n_iters=50, theta=1e-10):
         """
         PARAMETERS:
@@ -105,6 +105,7 @@ class Planner:
             pi_track.append(pi)
             if old_pi == pi:
                 converged = True
+                print(i)
         if not converged:
             warnings.warn("Max iterations reached before convergence.  Check n_iters.")
         return V, V_track, pi, pi_track
